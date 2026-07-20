@@ -34,7 +34,7 @@ VAGUE_ACTORS = [
 VALID_SECTORS = ["은행", "인터넷은행", "증권", "생보", "보안", "무관"]
 
 ID_RE = re.compile(r"^###\s+(P[1-6]-\d{2})\s*$")
-LOOSE_ID_RE = re.compile(r"^###\s+(P\s*[0-9].*)$", re.IGNORECASE)
+LOOSE_ID_RE = re.compile(r"^###\s+(P\s*[1-6]\s*-.*)$", re.IGNORECASE)
 FIELD_RE = re.compile(r"^-\s*([^:]+?)\s*:\s*(.+?)\s*$")
 URL_RE = re.compile(r"^https?://\S+$")
 
@@ -43,9 +43,10 @@ def parse_file(path):
     """마크다운 파일에서 문제 블록을 파싱한다.
 
     코드펜스(```) 내부 줄은 파싱에서 제외한다.
-    반환값: (problems, errors) — errors는 다음 두 가지 HARD 오류 메시지 목록.
+    반환값: (problems, errors) — errors는 다음 세 가지 HARD 오류 메시지 목록.
     1. 느슨한 ID 패턴에는 걸리지만 엄격한 ID_RE에는 걸리지 않는 어긋난 헤딩.
     2. 파일 끝까지 닫히지 않은 코드펜스.
+    3. 같은 블록 안에서 이미 존재하는 필드 키가 다시 나오는 경우 (조용한 덮어쓰기 방지).
     """
     problems = []
     errors = []
@@ -83,7 +84,13 @@ def parse_file(path):
             continue
         field = FIELD_RE.match(line)
         if field:
-            current["fields"][field.group(1).strip()] = field.group(2).strip()
+            key = field.group(1).strip()
+            value = field.group(2).strip()
+            if key in current["fields"]:
+                errors.append(
+                    f"{path}:{lineno} [{current['id']}] 필드 중복: '{key}' (이전 값이 덮어써짐)"
+                )
+            current["fields"][key] = value
 
     if in_fence:
         errors.append(
