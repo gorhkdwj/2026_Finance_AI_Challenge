@@ -43,17 +43,20 @@ def parse_file(path):
     """마크다운 파일에서 문제 블록을 파싱한다.
 
     코드펜스(```) 내부 줄은 파싱에서 제외한다.
-    반환값: (problems, errors) — errors는 느슨한 ID 패턴에는 걸리지만
-    엄격한 ID_RE에는 걸리지 않는 어긋난 헤딩에 대한 HARD 오류 메시지 목록.
+    반환값: (problems, errors) — errors는 다음 두 가지 HARD 오류 메시지 목록.
+    1. 느슨한 ID 패턴에는 걸리지만 엄격한 ID_RE에는 걸리지 않는 어긋난 헤딩.
+    2. 파일 끝까지 닫히지 않은 코드펜스.
     """
     problems = []
     errors = []
     current = None
     in_fence = False
+    fence_start = None
     lines = path.read_text(encoding="utf-8").splitlines()
     for lineno, line in enumerate(lines, 1):
         if line.lstrip().startswith("```"):
             in_fence = not in_fence
+            fence_start = lineno if in_fence else None
             continue
         if in_fence:
             continue
@@ -73,12 +76,20 @@ def parse_file(path):
             errors.append(
                 f"{path}:{lineno} ID 헤딩 형식 불량: {heading!r} (기대 형식: ### P1-01)"
             )
+            # 어긋난 헤딩 아래 필드가 직전 정상 블록으로 흡수되지 않도록 리셋한다.
+            current = None
             continue
         if current is None:
             continue
         field = FIELD_RE.match(line)
         if field:
             current["fields"][field.group(1).strip()] = field.group(2).strip()
+
+    if in_fence:
+        errors.append(
+            f"{path} 코드펜스가 닫히지 않음 (마지막 펜스 시작: {fence_start}행) — 이후 내용이 파싱에서 제외됨"
+        )
+
     return problems, errors
 
 
