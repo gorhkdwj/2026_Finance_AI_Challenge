@@ -89,6 +89,10 @@
 
 **목적:** 발산 단계가 끝난 뒤에 형식 오류를 발견하면 6축 전체를 다시 돌려야 한다. 검증기를 **먼저** 만들어 두고, 발산 에이전트에게 "이 검증기를 통과하는 형식으로 써라"고 지시한다.
 
+> **실행 후 기록 (2026-07-20):** 아래 Step 4의 코드로 구현한 뒤 리뷰에서 조용한 실패 경로 4건이 발견되어 후속 커밋 3개로 보강했다. 최종 구현은 `tools/validate_problems.py`를 직접 볼 것 — 아래 코드 블록은 최초 버전이다.
+> 보강 내용: ①코드펜스 내부 파싱 제외 ②어긋난 ID 헤딩(`### P1-1`, `### P1-01: 제목`)을 HARD 검출 ③어긋난 헤딩 뒤 필드가 직전 블록을 덮어쓰지 않도록 리셋 ④닫히지 않은 코드펜스를 HARD 검출 ⑤블록 내 중복 필드를 HARD 검출 ⑥`P2P 대출` 등 정상 소제목 오탐 제거.
+> 회귀 픽스처: `malformed_sample.md`, `silent_failure_sample.md`, `heading_edgecase_sample.md` 추가.
+
 **Files:**
 - Create: `tools/validate_problems.py`
 - Create: `tools/samples/valid_sample.md`
