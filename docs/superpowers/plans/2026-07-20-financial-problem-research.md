@@ -32,9 +32,56 @@
 | `docs/research/03-problem-validation.md` | 근거 등급·반증 탐색·URL 실증 결과 |
 | `docs/research/04-priority-matrix.md` | 6축 가중 스코어링 표 |
 | `docs/research/05-shortlist.md` | 최종 유망 문제 영역 3~5개 + 문제 정의서 |
+| `docs/research/PROGRESS.md` | 단계별 진행 누적 기록. 팀원이 이 파일 하나만 보면 전체 흐름을 파악할 수 있게 함 |
 | `tools/validate_problems.py` | 스키마 준수·URL 도달성 기계 검증. 80개 항목 수작업 검사를 대체 |
 | `tools/samples/valid_sample.md` | 검증기 정상 케이스 픽스처 |
 | `tools/samples/invalid_sample.md` | 검증기 위반 케이스 픽스처 |
+
+---
+
+## 문서 규약: 요약 블록과 진행 보고서
+
+`01-divergent/*.md`, `02-problem-pool.md`, `03-problem-validation.md`는 기계가 소비하는 데이터 파일이다. 사람이 통독할 수 없으므로 **각 파일 최상단에 요약 블록을 둔다.**
+
+### 요약 블록 형식
+
+```markdown
+# {문서 제목}
+
+## 한눈에 보기
+
+- **항목 수:** N개
+- **주요 패턴:** [반복 관찰된 경향 2~3개, 각 한 줄]
+- **특이 사항:** [예상 밖 발견, 근거가 유독 강하거나 약한 지점]
+- **다음 단계 유의점:** [다음 Task 담당자가 알아야 할 것]
+
+---
+
+### P1-01
+- 문제 한줄: ...
+```
+
+**위치 규칙 (필수):** 요약 블록은 **첫 번째 `### P` 헤딩보다 반드시 앞**에 온다.
+
+검증기는 `### P{1-6}-{2자리}` 헤딩을 만난 뒤부터 `- 키: 값` 줄을 필드로 수집한다. 요약 블록이 첫 문제 블록 뒤에 오면 `- 항목 수: 18개` 같은 줄이 **그 문제의 필드로 잘못 흡수된다.** 앞에 두면 `current is None` 상태라 전부 무시되므로 안전하다.
+
+또한 요약 블록 안에서 `### P1-01` 형태의 문자열을 예시로 쓰지 않는다. 헤딩으로 오인되어 빈 문제 블록이 생긴다.
+
+### PROGRESS.md 형식
+
+각 Task가 끝날 때 **맨 아래에 한 섹션을 덧붙인다.** 기존 내용을 고치지 않는다 — 진행 기록은 누적이지 갱신이 아니다.
+
+```markdown
+## Task N — {Task 이름}
+
+- **상태:** 완료 / 중단(사유)
+- **산출:** [생성·수정된 파일 경로]
+- **수치:** [개수, 통과/탈락 건수 등 정량 결과]
+- **판단:** [이 단계에서 내린 결정과 그 이유. 특히 무언가를 잘라냈다면 왜]
+- **다음 Task에 넘기는 것:** [주의사항, 미해결 이슈]
+```
+
+`판단` 항목이 핵심이다. 나중에 "왜 이 문제를 뺐지?"라는 질문이 반드시 나오는데, 그때 근거가 남아 있어야 한다.
 
 ---
 
@@ -386,6 +433,7 @@ git push
 **Files:**
 - Create: `docs/research/00-research-brief.md`
 - Create: `docs/research/prompts/divergent-template.md`
+- Create: `docs/research/PROGRESS.md`
 - Create: `docs/research/01-divergent/.gitkeep`
 
 **Interfaces:**
@@ -552,13 +600,65 @@ python tools/validate_problems.py {{OUTPUT_PATH}} --min {{MIN_COUNT}}
 {{RESEARCH_BRIEF}}
 ```
 
+- [ ] **Step 3-1: 헌장에 요약 블록 규약 추가**
+
+`00-research-brief.md` 끝에 아래 섹션을 덧붙인다. 발산 에이전트가 요약 블록을 잘못된 위치에 넣으면 검증기가 깨지므로, 헌장에 못을 박아둔다.
+
+```markdown
+## 8. 요약 블록 (필수)
+
+산출 파일 최상단에 아래 블록을 넣는다.
+
+- **항목 수:** N개
+- **주요 패턴:** [반복 관찰된 경향 2~3개, 각 한 줄]
+- **특이 사항:** [예상 밖 발견, 근거가 유독 강하거나 약한 지점]
+- **다음 단계 유의점:** [다음 담당자가 알아야 할 것]
+
+**위치 규칙:** 요약 블록은 **첫 번째 문제 블록 헤딩보다 반드시 앞**에 온다.
+뒤에 오면 요약의 `- 항목 수: N개` 줄이 직전 문제의 필드로 잘못 흡수되어
+검증에 실패한다. 또한 요약 블록 안에서 `P1-01` 형태의 문자열을
+세 번째 수준 헤딩(`###`)으로 쓰지 않는다.
+```
+
+- [ ] **Step 3-2: 진행 보고서 생성**
+
+`docs/research/PROGRESS.md`:
+
+```markdown
+# 금융 현안 발굴 리서치 — 진행 기록
+
+각 Task 종료 시 맨 아래에 섹션을 덧붙인다. 기존 내용은 고치지 않는다.
+
+관련 문서
+- 설계: `docs/superpowers/specs/2026-07-20-financial-problem-research-design.md`
+- 계획: `docs/superpowers/plans/2026-07-20-financial-problem-research.md`
+
+---
+
+## Task 1 — 검증 스크립트 구축
+
+- **상태:** 완료
+- **산출:** `tools/validate_problems.py`, `tools/samples/valid_sample.md`, `tools/samples/invalid_sample.md`
+- **수치:** 정상 픽스처 3항목 PASS / 위반 픽스처 HARD 3건 검출
+- **판단:** 발산보다 검증기를 먼저 만들어, 에이전트가 스스로 형식을 교정하게 함
+- **다음 Task에 넘기는 것:** 근거 URL은 쉼표 구분 다중 값을 허용함
+
+## Task 2 — 리서치 헌장 작성
+
+- **상태:** 완료
+- **산출:** `docs/research/00-research-brief.md`, `docs/research/prompts/divergent-template.md`
+- **수치:** 헌장 N줄 (상한 120줄)
+- **판단:** [작성 시 기록]
+- **다음 Task에 넘기는 것:** [작성 시 기록]
+```
+
 - [ ] **Step 4: 헌장 분량 확인 (중단 조건)**
 
 ```bash
 wc -l docs/research/00-research-brief.md
 ```
 
-기대: 120줄 이하. 초과 시 §7 참고 섹션부터 축약한다. 에이전트가 읽지 않을 분량이면 없는 것과 같다.
+기대: 140줄 이하 (§8 요약 블록 규약 포함). 초과 시 §7 참고 섹션부터 축약한다. 에이전트가 읽지 않을 분량이면 없는 것과 같다.
 
 - [ ] **Step 5: 완료 게이트 확인**
 
@@ -566,7 +666,9 @@ wc -l docs/research/00-research-brief.md
 - [ ] `00-research-brief.md`에 스키마 7개 필드가 표로 명문화되어 있다
 - [ ] `00-research-brief.md`에 금지 사항 4개가 §3에 명문화되어 있다
 - [ ] `00-research-brief.md`에 출력 형식 예시 블록이 포함되어 있다 (요약본 아님)
+- [ ] `00-research-brief.md` §8에 요약 블록 형식과 **위치 규칙**이 명시되어 있다
 - [ ] `divergent-template.md`에 플레이스홀더 5개(`{{AXIS_ID}}` `{{AXIS_NAME}}` `{{AXIS_SCOPE}}` `{{MIN_COUNT}}` `{{OUTPUT_PATH}}`)와 `{{RESEARCH_BRIEF}}`가 모두 존재한다
+- [ ] `PROGRESS.md`에 Task 1·2 섹션이 기록되어 있고, Task 2의 `판단`·`다음 Task에 넘기는 것`이 실제 내용으로 채워져 있다
 
 - [ ] **Step 6: 커밋**
 
@@ -575,7 +677,9 @@ git add docs/research/
 git commit -m "docs: 리서치 헌장 및 발산 프롬프트 템플릿 작성
 
 - 스키마 7필드, 금지사항 4개, 출력형식을 단일 출처로 고정
-- 발산 에이전트 공통 프롬프트 템플릿 (플레이스홀더 5개)"
+- 요약 블록 위치 규칙 명시 (검증기 파싱 충돌 방지)
+- 발산 에이전트 공통 프롬프트 템플릿 (플레이스홀더 5개)
+- 진행 기록 PROGRESS.md 신설"
 git push
 ```
 
@@ -647,10 +751,38 @@ python tools/validate_problems.py docs/research/01-divergent/p3-persona.md --min
 
 한 건이라도 URL이 내용과 불일치하면, 해당 축 전체를 재검토 대상으로 본다. 환각은 대개 단발이 아니다.
 
+- [ ] **Step 6-1: 요약 블록 확인 및 보완**
+
+P1/P2/P3 각 파일 최상단에 요약 블록이 있는지 확인한다. 에이전트가 빠뜨렸으면 직접 작성한다. 항목은 `항목 수` / `주요 패턴` / `특이 사항` / `다음 단계 유의점` 4가지다.
+
+위치를 반드시 확인한다.
+
+```bash
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p1-notice-reverse.md | head -5
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p2-industry.md | head -5
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p3-persona.md | head -5
+```
+
+기대: 각 파일에서 `한눈에 보기`의 줄 번호가 첫 `### P` 줄 번호보다 **작을 것**. 크면 요약이 문제 블록 뒤에 있다는 뜻이므로 앞으로 옮기고 Step 4 검증을 다시 돌린다.
+
+- [ ] **Step 6-2: 진행 기록 추가**
+
+`docs/research/PROGRESS.md` 맨 아래에 덧붙인다.
+
+```markdown
+## Task 3 — 발산 축 P1~P3
+
+- **상태:** 완료
+- **산출:** `docs/research/01-divergent/p1-notice-reverse.md`, `p2-industry.md`, `p3-persona.md`
+- **수치:** P1 N개 / P2 N개 / P3 N개 (합계 N개), 스키마 검증 PASS
+- **판단:** [해결책 누출로 삭제한 문장 수, 프롬프트를 보완했다면 그 내용과 이유]
+- **다음 Task에 넘기는 것:** [P4~P6 실행 시 반영할 프롬프트 수정 사항. 없으면 "없음"]
+```
+
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add docs/research/01-divergent/
+git add docs/research/
 git commit -m "docs: 발산 축 P1~P3 문제 발굴 결과
 
 - P1 공고 예시 역추출 / P2 업권별 현안 / P3 페르소나 페인포인트
@@ -724,10 +856,34 @@ python tools/validate_problems.py docs/research/01-divergent/ --min 80
 기대: `검사 대상: 80개 이상`, `결과: PASS`
 80개 미만이면 산출량이 가장 적은 축에 추가 발산을 지시한다. 단, 총 100개를 넘으면 추가 발산을 중단한다(검증 비용이 개수에 비례).
 
+- [ ] **Step 6-1: 요약 블록 확인 및 위치 검사**
+
+```bash
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p4-channel.md | head -5
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p5-regulator.md | head -5
+grep -n "한눈에 보기\|^### P" docs/research/01-divergent/p6-loss-stats.md | head -5
+```
+
+기대: 각 파일에서 `한눈에 보기` 줄 번호 < 첫 `### P` 줄 번호. 누락 시 직접 작성한다.
+
+- [ ] **Step 6-2: 진행 기록 추가**
+
+`docs/research/PROGRESS.md` 맨 아래에 덧붙인다.
+
+```markdown
+## Task 4 — 발산 축 P4~P6
+
+- **상태:** 완료
+- **산출:** `docs/research/01-divergent/p4-channel.md`, `p5-regulator.md`, `p6-loss-stats.md`
+- **수치:** P4 N개 / P5 N개 / P6 N개, 6축 합계 N개, P6 수치없음 0건
+- **판단:** [Task 3 피드백을 반영했다면 무엇을 어떻게 고쳤는지]
+- **다음 Task에 넘기는 것:** [축 간 눈에 띄는 중복 주제, 통합 시 주의할 점]
+```
+
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add docs/research/01-divergent/
+git add docs/research/
 git commit -m "docs: 발산 축 P4~P6 문제 발굴 결과
 
 - P4 채널 마찰 / P5 감독당국 지목 / P6 피해 통계
@@ -799,10 +955,35 @@ grep "중복 횟수" docs/research/02-problem-pool.md | sort | uniq -c | sort -r
 - [ ] 스키마 검증 `PASS` (위반 0건)
 - [ ] `중복 횟수: 2` 이상 항목이 존재한다
 
+- [ ] **Step 5-1: 요약 블록 작성**
+
+`02-problem-pool.md` 최상단(첫 `### P` 헤딩 앞)에 넣는다.
+
+```markdown
+## 한눈에 보기
+
+- **항목 수:** N개 (원본 N개 → 병합 N건 → 최종 N개)
+- **주요 패턴:** [당사자·업권·문제 유형별 분포에서 눈에 띄는 경향 2~3개]
+- **특이 사항:** [중복 횟수 3 이상 항목, 근거가 유독 강한 문제군]
+- **다음 단계 유의점:** [검증 단계에서 특히 반증을 의심해야 할 항목]
+```
+
+- [ ] **Step 5-2: 진행 기록 추가**
+
+```markdown
+## Task 5 — 문제 풀 통합 및 중복 제거
+
+- **상태:** 완료
+- **산출:** `docs/research/02-problem-pool.md`
+- **수치:** 원본 N개 → 병합 N건 → 최종 N개, 중복 횟수 2 이상 N건
+- **판단:** [병합 판정이 애매했던 사례와 어떻게 결정했는지]
+- **다음 Task에 넘기는 것:** [근거가 약해 보여 우선 검증이 필요한 항목 ID]
+```
+
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add docs/research/02-problem-pool.md
+git add docs/research/
 git commit -m "docs: 6축 문제 풀 통합 및 중복 제거
 
 - 중복 출처/중복 횟수 필드 추가로 다축 도출 신호 보존
@@ -898,10 +1079,16 @@ python tools/validate_problems.py docs/research/02-problem-pool.md --check-urls
 ```markdown
 # 문제 실재성 검증 결과
 
-- 검증 대상: N개
-- 생존: N개 (A등급 N / B등급 N / C등급 N)
-- 탈락: N개 (근거부족 N / 기존해결 N / 제도변화 N / URL불일치 N)
+## 한눈에 보기
+
+- **항목 수:** 검증 대상 N개 → 생존 N개 (A등급 N / B등급 N / C등급 N)
+- **탈락 내역:** 근거부족 N / 기존해결 N / 제도변화 N / URL불일치 N
+- **주요 패턴:** [어떤 축에서 온 문제가 많이 죽었는지, 죽은 이유의 공통점]
+- **특이 사항:** [반증에서 뜻밖에 강하게 살아남은 문제, 반대로 예상 밖으로 죽은 문제]
+- **다음 단계 유의점:** [채점 시 점수가 갈릴 것으로 보이는 지점]
 ```
+
+`한눈에 보기`는 첫 `### P` 헤딩보다 앞에 위치시킨다.
 
 - [ ] **Step 5: 생존 항목 재검증**
 
@@ -922,6 +1109,20 @@ python tools/validate_problems.py docs/research/03-problem-validation.md --min 1
 **중단 조건**
 - 생존 15개 미만 → Task 3/4로 되돌아가 축을 추가한다 (예: 해외 금융 현안의 국내 적용 가능성 축)
 - 생존 40개 초과 → 근거 등급 `A`/`B` 항목만 남기고 `C` 등급은 잘라낸다
+
+- [ ] **Step 6-1: 진행 기록 추가**
+
+```markdown
+## Task 6 — 문제 실재성 검증
+
+- **상태:** 완료
+- **산출:** `docs/research/03-problem-validation.md`, `02-problem-pool.md`(탈락 표시)
+- **수치:** 검증 N개 → 생존 N개 (A N / B N / C N), 탈락 N개, URL 도달 실패 0건
+- **판단:** [탈락 판정이 애매했던 사례와 결정 근거. 특히 "부분 해결"을 어디까지 생존으로 봤는지]
+- **다음 Task에 넘기는 것:** [채점 시 ④미해결도가 논쟁이 될 항목 ID]
+```
+
+**이 기록은 특히 중요하다.** 발표 심사 질의응답에서 "왜 이 문제를 골랐나"만큼이나 "왜 저 문제는 안 골랐나"가 자주 나온다. 탈락 근거가 남아 있어야 답할 수 있다.
 
 - [ ] **Step 7: 커밋**
 
@@ -1029,10 +1230,22 @@ git push
 
 **중단 조건** — 점수 재조정을 2회 넘게 반복하지 않는다. 3회째 조정은 원하는 항목을 올리기 위한 사후 합리화일 가능성이 높다.
 
+- [ ] **Step 5-1: 진행 기록 추가**
+
+```markdown
+## Task 7 — 우선순위 스코어링
+
+- **상태:** 완료
+- **산출:** `docs/research/04-priority-matrix.md`
+- **수치:** 채점 N개, 최고 가중합계 N점 / 상위권 컷 N점, 검산 3건 일치
+- **판단:** [점수 재조정을 했다면 몇 회, 무엇을 왜 바꿨는지. 앵커 해석이 갈린 축]
+- **다음 Task에 넘기는 것:** [순위는 낮지만 클러스터 구성상 버리기 아까운 항목 ID]
+```
+
 - [ ] **Step 6: 커밋**
 
 ```bash
-git add docs/research/04-priority-matrix.md
+git add docs/research/
 git commit -m "docs: 문제 우선순위 스코어링 완료
 
 - 6축 가중 채점(미해결도·심사적합성 ×1.5), 축별 근거 기록
@@ -1138,11 +1351,31 @@ grep -nE "AI로|LLM|RAG|챗봇|에이전트|추천 시스템|자동화하여|플
 - [ ] `05-shortlist.md` 유망 문제 영역 3~5개, 각 1페이지 문제 정의서 포함
 - [ ] 각 문제 정의서에 데이터 지형 메모 첨부 (`미확인` 허용)
 - [ ] Step 6 grep 결과 없음 (해결책 서술 0건)
+- [ ] `PROGRESS.md`에 Task 1~8 전 섹션이 기록되어 있다
+
+- [ ] **Step 7-1: 최종 진행 기록 추가**
+
+```markdown
+## Task 8 — 유망 문제 영역 선정
+
+- **상태:** 완료 — 리서치 사이클 종료
+- **산출:** `docs/research/05-shortlist.md`
+- **수치:** 클러스터 N개 → 선정 N개 영역, 포함 문제 N개, 데이터 지형 `미확인` N건
+- **판단:** [클러스터 경계를 어떻게 그었는지, 탈락시킨 클러스터와 그 이유]
+- **다음 사이클에 넘기는 것:** 해결책 설계 시 반영할 제약 4가지 (팀 역량 공백 / 배포 가동 요구 / 데이터 미제공 / 1차 심사 주제 적합성)
+
+---
+
+## 리서치 사이클 종료
+
+- 최종 산출물: `docs/research/05-shortlist.md`
+- 다음 단계: 해결책 설계 사이클 (별도 brainstorming → spec → plan)
+```
 
 - [ ] **Step 8: 커밋**
 
 ```bash
-git add docs/research/05-shortlist.md
+git add docs/research/
 git commit -m "docs: 유망 금융 현안 영역 3~5개 선정
 
 - 클러스터링 + 다축 중복 도출 가점 적용
