@@ -34,16 +34,29 @@ VAGUE_ACTORS = [
 VALID_SECTORS = ["은행", "인터넷은행", "증권", "생보", "보안", "무관"]
 
 ID_RE = re.compile(r"^###\s+(P[1-6]-\d{2})\s*$")
+LOOSE_ID_RE = re.compile(r"^###\s+(P\s*[0-9].*)$", re.IGNORECASE)
 FIELD_RE = re.compile(r"^-\s*([^:]+?)\s*:\s*(.+?)\s*$")
 URL_RE = re.compile(r"^https?://\S+$")
 
 
 def parse_file(path):
-    """마크다운 파일에서 문제 블록을 파싱한다."""
+    """마크다운 파일에서 문제 블록을 파싱한다.
+
+    코드펜스(```) 내부 줄은 파싱에서 제외한다.
+    반환값: (problems, errors) — errors는 느슨한 ID 패턴에는 걸리지만
+    엄격한 ID_RE에는 걸리지 않는 어긋난 헤딩에 대한 HARD 오류 메시지 목록.
+    """
     problems = []
+    errors = []
     current = None
+    in_fence = False
     lines = path.read_text(encoding="utf-8").splitlines()
     for lineno, line in enumerate(lines, 1):
+        if line.lstrip().startswith("```"):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
         match = ID_RE.match(line)
         if match:
             current = {
@@ -54,12 +67,19 @@ def parse_file(path):
             }
             problems.append(current)
             continue
+        loose = LOOSE_ID_RE.match(line)
+        if loose:
+            heading = line.strip()
+            errors.append(
+                f"{path}:{lineno} ID 헤딩 형식 불량: {heading!r} (기대 형식: ### P1-01)"
+            )
+            continue
         if current is None:
             continue
         field = FIELD_RE.match(line)
         if field:
             current["fields"][field.group(1).strip()] = field.group(2).strip()
-    return problems
+    return problems, errors
 
 
 def check_url(url, timeout=10):
@@ -148,10 +168,14 @@ def main():
     args = parser.parse_args()
 
     problems = []
+    parse_errors = []
     for path in collect_files(args.targets):
-        problems.extend(parse_file(path))
+        file_problems, file_errors = parse_file(path)
+        problems.extend(file_problems)
+        parse_errors.extend(file_errors)
 
     hard, warn = validate(problems, check_urls=args.check_urls)
+    hard = parse_errors + hard
 
     if args.min and len(problems) < args.min:
         hard.append(f"문제 개수 미달: {len(problems)}개 (최소 {args.min}개 필요)")
